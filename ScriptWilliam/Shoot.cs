@@ -18,6 +18,10 @@ public class Shoot : MonoBehaviour
     public Vector2 direction;
 
     public GameObject player;
+
+    public float impact;
+
+    public float angle;
     // Start is called before the first frame update
 
     Vector2 Normalize(Vector2 dir)
@@ -33,25 +37,15 @@ public class Shoot : MonoBehaviour
 
     void setDirection(Vector2 dir)
     {
-        direction = new Vector2(dir.x, dir.y);
+        direction = Normalize(dir);
     }
-
-    void multiplyDirection(float x, float y)
-    {
-        direction.x *= x;
-        direction.y *= y;
-    }
-
 
     void Start()
     {
-        print(player.transform.rotation.w);
-        print(player.transform.rotation.x);
-        print(player.transform.rotation.y);
-        print(player.transform.localRotation.z);
-        float angle = player.transform.rotation.z + player.transform.rotation.w;
-        //angle = angle * Mathf.Deg2Rad;
-        Vector2 dir = new Vector2(MathF.Cos(angle), MathF.Sin(angle));
+        this.GetComponent<SpriteRenderer>().color = new Color(0, 0, 0);
+        angle = player.transform.rotation.eulerAngles.z;
+        float angleInRad = angle * Mathf.Deg2Rad;
+        Vector2 dir = new Vector2(MathF.Cos(angleInRad), MathF.Sin(angleInRad));
         setDirection(dir);
         print($"x : {direction.x}, y : {direction.y}");
     }
@@ -64,25 +58,72 @@ public class Shoot : MonoBehaviour
         }
         if (collision.gameObject.tag == "Player")
         {
-            life = 0;
             collision.gameObject.GetComponent<Player>().life--;
         }
         life--;
+        //bouncingBall
+        for (int i = 0; i < color.Count; i++)
+        {
+            //BLUE
+            //base color blue
+            if (color[i]=="Blue" && i==0 && collision.gameObject.tag == "Wall")
+            {
+                Vector3 baseDir = new Vector3(direction.x, direction.y, 0);
+                ContactPoint2D contact = collision.GetContact(0);
+                Vector2 norm = contact.normal;
+                Vector3 norm3 = new Vector3(norm.x, norm.y, 0);
+                baseDir = Vector3.Reflect(baseDir, norm3);
+                direction = new Vector2(baseDir.x, baseDir.y);
+            }
+            //Base Color not blue but contains blue
+            else if (color[i] == "Blue" && i != 0 && collision.gameObject.tag == "Player")
+            {
+                Vector3 baseDir = new Vector3(direction.x, direction.y, 0);
+                ContactPoint2D contact = collision.GetContact(0);
+                Vector2 norm = contact.normal;
+                Vector3 norm3 = new Vector3(norm.x, norm.y, 0);
+                baseDir = Vector3.Reflect(baseDir, norm3);
+                direction = new Vector2(baseDir.x, baseDir.y);
+            } else if (color[i] == "Blue" && i==0 && collision.gameObject.tag == "Player")
+            {
+                life = 0;
+            }
+            //RED
+            if (color[i] == "Red")
+            {
+                Collider2D[] objectNear = Physics2D.OverlapCircleAll(gameObject.transform.position, impact);
+                foreach (var item in objectNear)
+                {
+                    if (item.gameObject != gameObject)
+                    {
+                        Destroy(item.gameObject);
+                    }
+                }
+            }
+        }
         if (life <= 0)
         {
             Destroy(gameObject);
         }
     }
-
     // Update is called once per frame
     void Update()
     {
         //Color
         foreach (var item in color)
         {
+            Color col = GetComponent<SpriteRenderer>().color;
             if (item=="Blue")
             {
-                this.GetComponent<SpriteRenderer>().color = new Color(0, 0, 255);
+                this.GetComponent<SpriteRenderer>().color = new Color(col.r, col.g, 255);
+            }
+            if (item=="Red")
+            {
+                this.GetComponent<SpriteRenderer>().color = new Color(255, col.g, col.b);
+            }
+            if (item == "Yellow")
+            {
+                this.GetComponent<SpriteRenderer>().color = new Color(255, 255, col.b);
             }
         }
 
