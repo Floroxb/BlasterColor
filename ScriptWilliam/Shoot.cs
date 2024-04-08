@@ -21,7 +21,16 @@ public class Shoot : MonoBehaviour
 
     public float impact;
 
+    public List<GameObject> listWalls;
+
     public float angle;
+
+    public Vector2 basePosition;
+
+    public float maxDistance;
+
+    bool destroy;
+
     // Start is called before the first frame update
 
     Vector2 Normalize(Vector2 dir)
@@ -40,8 +49,16 @@ public class Shoot : MonoBehaviour
         direction = Normalize(dir);
     }
 
+    float getDistance()
+    {
+        Vector2 distance = new Vector2(transform.position.x - basePosition.x, transform.position.y - basePosition.y);
+        return Mathf.Sqrt(distance.x*distance.x + distance.y*distance.y);
+    }
+
     void Start()
     {
+        basePosition.x = transform.position.x;
+        basePosition.y = transform.position.y;
         this.GetComponent<SpriteRenderer>().color = new Color(0, 0, 0);
         angle = player.transform.rotation.eulerAngles.z;
         float angleInRad = angle * Mathf.Deg2Rad;
@@ -54,17 +71,18 @@ public class Shoot : MonoBehaviour
     {
         if (collision.gameObject.tag == "Wall")
         {
-            collision.gameObject.GetComponent<Wall>().life--;
+            collision.gameObject.GetComponent<Wall>().life-= damage;
         }
         if (collision.gameObject.tag == "Player")
         {
-            collision.gameObject.GetComponent<Player>().life--;
+            collision.gameObject.GetComponent<Player>().life-= damage;
         }
         life--;
-        //bouncingBall
+
         for (int i = 0; i < color.Count; i++)
         {
             //BLUE
+            //bouncingBall
             //base color blue
             if (color[i]=="Blue" && i==0 && collision.gameObject.tag == "Wall")
             {
@@ -96,14 +114,22 @@ public class Shoot : MonoBehaviour
                 {
                     if (item.gameObject != gameObject)
                     {
-                        Destroy(item.gameObject);
+                        if (item.gameObject.tag == "Wall")
+                        {
+                            item.gameObject.GetComponent<Wall>().life-= damage;
+                        }
+                        if (item.gameObject.tag == "Player")
+                        {
+                            item.gameObject.GetComponent<Player>().life-= damage;
+                        }
                     }
                 }
             }
-        }
-        if (life <= 0)
-        {
-            Destroy(gameObject);
+            //Yellow
+            if (color[i] == "Yellow" && collision.gameObject.tag == "Player")
+            {
+                life = 0;
+            }
         }
     }
     // Update is called once per frame
@@ -115,20 +141,53 @@ public class Shoot : MonoBehaviour
             Color col = GetComponent<SpriteRenderer>().color;
             if (item=="Blue")
             {
-                this.GetComponent<SpriteRenderer>().color = new Color(col.r, col.g, 255);
+                this.GetComponent<SpriteRenderer>().color = new Color(col.r, col.g, 128);
             }
             if (item=="Red")
             {
-                this.GetComponent<SpriteRenderer>().color = new Color(255, col.g, col.b);
+                this.GetComponent<SpriteRenderer>().color = new Color(128, col.g, col.b);
             }
-            if (item == "Yellow")
+            if (item == "Yellow" && color[0]!="Yellow")
             {
-                this.GetComponent<SpriteRenderer>().color = new Color(255, 255, col.b);
+                this.GetComponent<SpriteRenderer>().color = new Color(128, 128, col.b);
+                foreach (var wall in listWalls)
+                {
+                    Physics2D.IgnoreCollision(gameObject.GetComponent<Collider2D>(), wall.GetComponent<Collider2D>());
+                }
             }
         }
+        if (color.Count == 3)
+        {
+            this.GetComponent<SpriteRenderer>().color = new Color(0, 0, 0);
+            gameObject.GetComponent<Collider2D>().enabled = false;
+            Collider2D[] objectNear = Physics2D.OverlapCircleAll(gameObject.transform.position, impact);
+            foreach (var item in objectNear)
+            {
+                if (item.gameObject != gameObject)
+                {
+                    if (item.gameObject.tag == "Wall")
+                    {
+                        item.gameObject.GetComponent<Wall>().life -= damage;
+                    }
+                    if (item.gameObject.tag == "Player")
+                    {
+                        item.gameObject.GetComponent<Player>().life-= damage;
+                    }
+                }
+            }
 
+        }
+        if (maxDistance < getDistance())
+        {
+                life = 0; 
+        }
         //Move
         Vector2 currentVelocity = new Vector2(direction.x *mouvementSpeed, direction.y * mouvementSpeed);
         rb.velocity = currentVelocity;
+
+        if (life <= 0)
+        {
+            Destroy(gameObject);
+        }
     }
 }
