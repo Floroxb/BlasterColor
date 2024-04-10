@@ -29,7 +29,7 @@ public class Shoot : MonoBehaviour
 
     public float maxDistance;
 
-    bool destroy;
+    public float maxTime;
 
     // Start is called before the first frame update
 
@@ -57,14 +57,33 @@ public class Shoot : MonoBehaviour
 
     void Start()
     {
-        basePosition.x = transform.position.x;
-        basePosition.y = transform.position.y;
+        transform.position = basePosition;
         this.GetComponent<SpriteRenderer>().color = new Color(0, 0, 0);
         angle = player.transform.rotation.eulerAngles.z;
         float angleInRad = angle * Mathf.Deg2Rad;
         Vector2 dir = new Vector2(MathF.Cos(angleInRad), MathF.Sin(angleInRad));
         setDirection(dir);
-        print($"x : {direction.x}, y : {direction.y}");
+        //Color
+        foreach (var item in color)
+        {
+            Color col = GetComponent<SpriteRenderer>().color;
+            if (item == "Blue")
+            {
+                this.GetComponent<SpriteRenderer>().color = new Color(col.r, col.g, 128);
+            }
+            if (item == "Red")
+            {
+                this.GetComponent<SpriteRenderer>().color = new Color(128, col.g, col.b);
+            }
+            if (item == "Yellow")
+            {
+                this.GetComponent<SpriteRenderer>().color = new Color(128, 128, col.b);
+                foreach (var wall in listWalls)
+                {
+                    Physics2D.IgnoreCollision(gameObject.GetComponent<Collider2D>(), wall.GetComponent<Collider2D>());
+                }
+            }
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -109,6 +128,7 @@ public class Shoot : MonoBehaviour
             //RED
             if (color[i] == "Red")
             {
+                transform.localScale = new Vector2(impact, impact);
                 Collider2D[] objectNear = Physics2D.OverlapCircleAll(gameObject.transform.position, impact);
                 foreach (var item in objectNear)
                 {
@@ -124,6 +144,7 @@ public class Shoot : MonoBehaviour
                         }
                     }
                 }
+                Destroy(gameObject);
             }
             //Yellow
             if (color[i] == "Yellow" && collision.gameObject.tag == "Player")
@@ -135,27 +156,6 @@ public class Shoot : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //Color
-        foreach (var item in color)
-        {
-            Color col = GetComponent<SpriteRenderer>().color;
-            if (item=="Blue")
-            {
-                this.GetComponent<SpriteRenderer>().color = new Color(col.r, col.g, 128);
-            }
-            if (item=="Red")
-            {
-                this.GetComponent<SpriteRenderer>().color = new Color(128, col.g, col.b);
-            }
-            if (item == "Yellow" && color[0]!="Yellow")
-            {
-                this.GetComponent<SpriteRenderer>().color = new Color(128, 128, col.b);
-                foreach (var wall in listWalls)
-                {
-                    Physics2D.IgnoreCollision(gameObject.GetComponent<Collider2D>(), wall.GetComponent<Collider2D>());
-                }
-            }
-        }
         if (color.Count == 3)
         {
             this.GetComponent<SpriteRenderer>().color = new Color(0, 0, 0);
@@ -177,7 +177,7 @@ public class Shoot : MonoBehaviour
             }
 
         }
-        if (maxDistance < getDistance())
+        if (maxDistance < getDistance() || maxTime-Time.realtimeSinceStartup <=0)
         {
                 life = 0; 
         }

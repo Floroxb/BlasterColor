@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class Wall : MonoBehaviour
 {
+    public List<GameObject> Players;
     public int life;
     // Start is called before the first frame update
     void Start()
@@ -18,6 +19,10 @@ public class Wall : MonoBehaviour
     {
         if (life <= 0)
         {
+            foreach (var player in Players)
+            {
+                player.GetComponent<Player>().walls.Remove(gameObject);
+            }
             Destroy(gameObject);
         }
     }
